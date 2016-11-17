@@ -9,7 +9,7 @@ DHT22(Temperature Humidity Sensor),
 // PIN 0000
 
 #include <LiquidCrystal_I2C.h>
-#include "DHT.h"
+#include <DHT.h>
 #include <SoftwareSerial.h>
 
 #define DHTPIN 3 // Connect DHT22 sensor to Arduino Digital Pin 3
@@ -30,7 +30,12 @@ DHT dht(DHTPIN, DHTTYPE);
 // Bluetooth
 SoftwareSerial BTSerial(BLUETOOTHTXD, BLUETOOTHRXD);
 
-void setup(){
+// First DustValue
+float firstDustValue;
+int firstCount = 0;
+
+void setup()
+{
 
   // 특수 문자는 LCD에서 지원해주지 않으므로 직접 제작하여 사용.
   // ℃ 표현 문자
@@ -101,16 +106,20 @@ void setup(){
   BTSerial.begin(9600); // BluetoothSerial
 }
 
-void loop(){
+void loop()
+{
 
   float dustValue;
   float tmp = dht.readTemperature();
   float hum = dht.readHumidity();
  
-  if(isnan(tmp) || isnan(hum)){
+  if(isnan(tmp) || isnan(hum))
+  {
     lcd.setCursor(0,0);
     lcd.print("temperature, humidity error");
-  } else {
+  } 
+  else 
+  {
     lcd.setCursor(0,0);
     lcd.print(tmp);
     lcd.write(byte(0));
@@ -118,8 +127,17 @@ void loop(){
     lcd.print(hum);
     lcd.print("%   ");
   }
-  
-  if(getDustValue(dustValue)) {
+
+  if(getDustValue(dustValue)) 
+  {
+
+    // 초기값 세팅
+    if(firstCount == 0)
+    {
+      firstDustValue = dustValue;  
+    }
+    firstCount++;
+    
     lcd.setCursor(0,1);
     lcd.print("   ");
     lcd.print(dustValue);
@@ -139,7 +157,8 @@ void loop(){
   delay(500);
 }
 
-float getDustValue(float &dustValue){
+int getDustValue(float &dustValue)
+{
 
   // 5초 평균의 먼지 센서 값을 받아오기 위한 count
   static int count;
@@ -172,15 +191,18 @@ float getDustValue(float &dustValue){
   dustDensity = (0.17 * calcVoltage - 0.1) * 1000;
 
   dustValue += dustDensity;
+
   // unit: mg/m3 
   // 1mg = 1000μg(micro gram)
-  
-  if(++count == 5){
-    dustValue /= count;
+  if(++count == 5)
+  {
+    dustValue += firstDustValue * 5; // 초기값을 이용한 센서 값 조정
+    dustValue /= (count + 5);
     count = 0;
-    return dustValue;
-  } else {
+    return 1;
+  } 
+  else 
+  {
     return 0;
   }
 }
-
