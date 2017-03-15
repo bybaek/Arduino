@@ -30,10 +30,6 @@ DHT dht(DHTPIN, DHTTYPE);
 // Bluetooth
 SoftwareSerial BTSerial(BLUETOOTHTXD, BLUETOOTHRXD);
 
-// First DustValue
-float firstDustValue;
-int firstCount = 0;
-
 void setup()
 {
 
@@ -130,14 +126,6 @@ void loop()
 
   if(getDustValue(dustValue)) 
   {
-
-    // 초기값 세팅
-    if(firstCount == 0)
-    {
-      firstDustValue = dustValue;  
-    }
-    firstCount++;
-    
     lcd.setCursor(0,1);
     lcd.print("   ");
     lcd.print(dustValue);
@@ -196,8 +184,7 @@ int getDustValue(float &dustValue)
   // 1mg = 1000μg(micro gram)
   if(++count == 5)
   {
-    dustValue += firstDustValue * 5; // 초기값을 이용한 센서 값 조정
-    dustValue /= (count + 5);
+    dustValue /= count; // 평균 dustValue 
     count = 0;
     return 1;
   } 
@@ -206,3 +193,9 @@ int getDustValue(float &dustValue)
     return 0;
   }
 }
+
+void reset()
+{
+  asm volatile(" jmp 0");
+}
+
